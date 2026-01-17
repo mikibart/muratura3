@@ -1,0 +1,26 @@
+# FreeCAD Portable (troppo grande)
+freecad/
+
+# File temporanei MCP
+_mcp_command.json
+_mcp_response.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Output temporanei
+*.FCStd1
+*.FCBak
+*.step
+*.brep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
