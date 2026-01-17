@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Tavola DCR - {{ project_name }}</title>
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 10mm;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1a5276;
+            padding-bottom: 5mm;
+            margin-bottom: 10mm;
+        }
+
+        .header h1 {
+            color: #1a5276;
+            margin: 0;
+            font-size: 18pt;
+        }
+
+        .header .info {
+            text-align: right;
+            font-size: 10pt;
+            color: #666;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10mm;
+            padding: 5mm;
+            background: #f8f9fa;
+            border-radius: 3mm;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .dcr-0 { background: #28a745; }
+        .dcr-1 { background: #7cb342; }
+        .dcr-2 { background: #ffc107; }
+        .dcr-3 { background: #ff9800; }
+        .dcr-4 { background: #dc3545; }
+
+        .floor-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15mm;
+        }
+
+        .floor {
+            border: 1px solid #ddd;
+            padding: 5mm;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .floor h2 {
+            color: #2e86ab;
+            margin: 0 0 5mm 0;
+            font-size: 14pt;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 2mm;
+        }
+
+        .plan-view {
+            position: relative;
+            min-height: 150mm;
+            min-width: 200mm;
+        }
+
+        .wall {
+            position: absolute;
+            background: #ddd;
+            border: 1px solid #999;
+        }
+
+        .wall.x-dir {
+            height: 8mm;
+        }
+
+        .wall.y-dir {
+            width: 8mm;
+        }
+
+        .pier {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 8pt;
+            border: 1px solid rgba(0,0,0,0.3);
+        }
+
+        .pier-label {
+            position: absolute;
+            font-size: 7pt;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        /* DCR color coding */
+        .dcr-ok { background: #28a745; }
+        .dcr-good { background: #7cb342; }
+        .dcr-warning { background: #ffc107; color: #333; }
+        .dcr-critical { background: #ff9800; }
+        .dcr-fail { background: #dc3545; }
+
+        .summary-table {
+            margin-top: 10mm;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+
+        .summary-table th {
+            background: #1a5276;
+            color: white;
+            padding: 3mm;
+            text-align: left;
+        }
+
+        .summary-table td {
+            padding: 2mm 3mm;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .summary-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .footer {
+            margin-top: 10mm;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 5mm;
+        }
+
+        .scale-bar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 9pt;
+        }
+
+        .scale-line {
+            width: 50mm;
+            height: 3px;
+            background: #333;
+            position: relative;
+        }
+
+        .scale-line::before,
+        .scale-line::after {
+            content: '';
+            position: absolute;
+            width: 3px;
+            height: 8px;
+            background: #333;
+            top: -2.5px;
+        }
+
+        .scale-line::before { left: 0; }
+        .scale-line::after { right: 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>MAPPA DCR - DEMAND/CAPACITY RATIO</h1>
+            <p>{{ project_name }} - Piano {{ piano }}</p>
+        </div>
+        <div class="info">
+            <p>Stato limite: {{ stato_limite }}</p>
+            <p>Data: {{ data }}</p>
+            <p>Tavola: TAV.DCR.{{ piano }}</p>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color dcr-0"></div>
+            <span>DCR ≤ 0.5</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color dcr-1"></div>
+            <span>0.5 &lt; DCR ≤ 0.8</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color dcr-2"></div>
+            <span>0.8 &lt; DCR ≤ 1.0</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color dcr-3"></div>
+            <span>1.0 &lt; DCR ≤ 1.2</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color dcr-4"></div>
+            <span>DCR &gt; 1.2</span>
+        </div>
+
+        <div class="scale-bar" style="margin-left: auto;">
+            <div class="scale-line"></div>
+            <span>{{ scala }} m</span>
+        </div>
+    </div>
+
+    <div class="floor-container">
+        {{ floor_content }}
+    </div>
+
+    <table class="summary-table">
+        <thead>
+            <tr>
+                <th>ID Maschio</th>
+                <th>Posizione</th>
+                <th>Larghezza [m]</th>
+                <th>Spessore [m]</th>
+                <th>Altezza [m]</th>
+                <th>V<sub>Ed</sub> [kN]</th>
+                <th>V<sub>Rd</sub> [kN]</th>
+                <th>DCR</th>
+                <th>Verifica</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ pier_table }}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>MURATURA 3.0 - Software per analisi strutturale edifici in muratura - NTC 2018</p>
+    </div>
+</body>
+</html>

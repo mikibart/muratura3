@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relazione di Calcolo - {{ project_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 25mm 20mm 25mm 25mm;
+            @top-center {
+                content: "{{ project_name }}";
+                font-size: 9pt;
+                color: #666;
+            }
+            @bottom-right {
+                content: "Pag. " counter(page) " di " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Liberation Sans', Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #333;
+            max-width: 170mm;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Header */
+        .cover {
+            text-align: center;
+            page-break-after: always;
+            padding-top: 60mm;
+        }
+
+        .cover h1 {
+            font-size: 24pt;
+            color: #1a5276;
+            margin-bottom: 20mm;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .cover h2 {
+            font-size: 18pt;
+            color: #2e86ab;
+            margin-bottom: 15mm;
+        }
+
+        .cover .subtitle {
+            font-size: 14pt;
+            color: #666;
+            margin-bottom: 30mm;
+        }
+
+        .cover-info {
+            text-align: left;
+            margin: 20mm auto;
+            max-width: 120mm;
+        }
+
+        .cover-info table {
+            width: 100%;
+            border: none;
+        }
+
+        .cover-info td {
+            padding: 3mm 0;
+            border: none;
+        }
+
+        .cover-info td:first-child {
+            font-weight: bold;
+            width: 40%;
+            color: #555;
+        }
+
+        /* Table of Contents */
+        .toc {
+            page-break-after: always;
+        }
+
+        .toc h2 {
+            color: #1a5276;
+            border-bottom: 2px solid #1a5276;
+            padding-bottom: 5mm;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            margin: 3mm 0;
+            padding: 2mm 0;
+            border-bottom: 1px dotted #ccc;
+        }
+
+        .toc a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        .toc .chapter-num {
+            display: inline-block;
+            width: 15mm;
+            font-weight: bold;
+            color: #1a5276;
+        }
+
+        /* Chapters */
+        h1 {
+            color: #1a5276;
+            font-size: 18pt;
+            margin-top: 15mm;
+            padding-bottom: 3mm;
+            border-bottom: 2px solid #1a5276;
+            page-break-after: avoid;
+        }
+
+        h2 {
+            color: #2e86ab;
+            font-size: 14pt;
+            margin-top: 10mm;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            color: #3498db;
+            font-size: 12pt;
+            margin-top: 8mm;
+            page-break-after: avoid;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5mm 0 8mm 0;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 2.5mm 3mm;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(to bottom, #2e86ab, #1a5276);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e8f4f8;
+        }
+
+        td.number {
+            text-align: right;
+            font-family: 'Consolas', monospace;
+        }
+
+        td.center {
+            text-align: center;
+        }
+
+        .table-caption {
+            font-style: italic;
+            color: #666;
+            font-size: 10pt;
+            margin-top: 2mm;
+            text-align: center;
+        }
+
+        /* Figures */
+        .figure {
+            text-align: center;
+            margin: 8mm 0;
+            page-break-inside: avoid;
+        }
+
+        .figure img {
+            max-width: 100%;
+            max-height: 180mm;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .figure-caption {
+            font-style: italic;
+            color: #666;
+            font-size: 10pt;
+            margin-top: 3mm;
+        }
+
+        /* Formula blocks */
+        .formula {
+            background: #f8f9fa;
+            border-left: 4px solid #2e86ab;
+            padding: 4mm 6mm;
+            margin: 5mm 0;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            overflow-x: auto;
+        }
+
+        .formula-label {
+            float: right;
+            color: #666;
+            font-size: 10pt;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 3mm 0;
+            padding-left: 8mm;
+        }
+
+        li {
+            margin: 2mm 0;
+        }
+
+        /* Boxes */
+        .info-box {
+            background: #e8f4f8;
+            border: 1px solid #2e86ab;
+            border-radius: 3mm;
+            padding: 4mm 6mm;
+            margin: 5mm 0;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 3mm;
+            padding: 4mm 6mm;
+            margin: 5mm 0;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            border-radius: 3mm;
+            padding: 4mm 6mm;
+            margin: 5mm 0;
+        }
+
+        .danger-box {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            border-radius: 3mm;
+            padding: 4mm 6mm;
+            margin: 5mm 0;
+        }
+
+        /* DCR Results */
+        .dcr-ok {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .dcr-warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .dcr-fail {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 20mm;
+            padding-top: 5mm;
+            border-top: 1px solid #ccc;
+            text-align: center;
+            color: #666;
+            font-size: 9pt;
+        }
+
+        /* Print specific */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+
+            table, .figure {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- COPERTINA -->
+    <div class="cover">
+        <h1>RELAZIONE DI CALCOLO STRUTTURALE</h1>
+        <h2>{{ project_name }}</h2>
+        <p class="subtitle">Analisi strutturale edificio in muratura<br>conforme NTC 2018</p>
+
+        <div class="cover-info">
+            <table>
+                <tr>
+                    <td>Committente:</td>
+                    <td>{{ committente }}</td>
+                </tr>
+                <tr>
+                    <td>Progettista:</td>
+                    <td>{{ progettista }}</td>
+                </tr>
+                <tr>
+                    <td>Ubicazione:</td>
+                    <td>{{ ubicazione }}</td>
+                </tr>
+                <tr>
+                    <td>Data:</td>
+                    <td>{{ data }}</td>
+                </tr>
+                <tr>
+                    <td>Codice Progetto:</td>
+                    <td>{{ codice_progetto }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- INDICE -->
+    <div class="toc">
+        <h2>Indice</h2>
+        <ul>
+            <li><span class="chapter-num">1</span> <a href="#cap1">Premessa</a></li>
+            <li><span class="chapter-num">2</span> <a href="#cap2">Descrizione dell'Opera</a></li>
+            <li><span class="chapter-num">3</span> <a href="#cap3">Normative di Riferimento</a></li>
+            <li><span class="chapter-num">4</span> <a href="#cap4">Caratteristiche dei Materiali</a></li>
+            <li><span class="chapter-num">5</span> <a href="#cap5">Analisi dei Carichi</a></li>
+            <li><span class="chapter-num">6</span> <a href="#cap6">Azione Sismica</a></li>
+            <li><span class="chapter-num">7</span> <a href="#cap7">Modellazione Strutturale</a></li>
+            <li><span class="chapter-num">8</span> <a href="#cap8">Analisi Strutturale</a></li>
+            <li><span class="chapter-num">9</span> <a href="#cap9">Verifiche di Sicurezza</a></li>
+            <li><span class="chapter-num">10</span> <a href="#cap10">Meccanismi Locali</a></li>
+            <li><span class="chapter-num">11</span> <a href="#cap11">Interventi di Rinforzo</a></li>
+            <li><span class="chapter-num">12</span> <a href="#cap12">Conclusioni</a></li>
+        </ul>
+    </div>
+
+    <!-- CAPITOLO 1: PREMESSA -->
+    <h1 id="cap1">1. Premessa</h1>
+    <p>La presente relazione di calcolo strutturale è redatta ai sensi delle Norme Tecniche per le Costruzioni
+    (NTC 2018 - D.M. 17 gennaio 2018) e della relativa Circolare esplicativa n. 7 del 21 gennaio 2019.</p>
+
+    <p>Oggetto dell'analisi è l'edificio in muratura portante denominato <strong>"{{ project_name }}"</strong>,
+    ubicato in {{ ubicazione }}.</p>
+
+    <p>L'analisi strutturale è stata condotta utilizzando il software MURATURA 3.0, conforme alle prescrizioni
+    normative vigenti per la verifica di edifici in muratura.</p>
+
+    <!-- CAPITOLO 2: DESCRIZIONE OPERA -->
+    <h1 id="cap2">2. Descrizione dell'Opera</h1>
+
+    <h2>2.1 Generalità</h2>
+    <table>
+        <tr>
+            <th>Parametro</th>
+            <th>Valore</th>
+        </tr>
+        <tr>
+            <td>Tipologia edificio</td>
+            <td>{{ tipologia_edificio }}</td>
+        </tr>
+        <tr>
+            <td>Tipo costruzione</td>
+            <td>{{ tipo_costruzione }}</td>
+        </tr>
+        <tr>
+            <td>Categoria intervento</td>
+            <td>{{ categoria_intervento }}</td>
+        </tr>
+        <tr>
+            <td>Numero piani fuori terra</td>
+            <td class="number">{{ n_piani }}</td>
+        </tr>
+        <tr>
+            <td>Numero piani interrati</td>
+            <td class="number">{{ n_piani_interrati }}</td>
+        </tr>
+        <tr>
+            <td>Altezza massima</td>
+            <td class="number">{{ altezza_max }} m</td>
+        </tr>
+        <tr>
+            <td>Superficie coperta</td>
+            <td class="number">{{ superficie_coperta }} m²</td>
+        </tr>
+    </table>
+
+    <h2>2.2 Vita Nominale e Classe d'Uso</h2>
+    <p>Ai sensi del §2.4 delle NTC 2018:</p>
+    <table>
+        <tr>
+            <th>Parametro</th>
+            <th>Valore</th>
+            <th>Riferimento</th>
+        </tr>
+        <tr>
+            <td>Vita nominale V<sub>N</sub></td>
+            <td class="number">{{ VN }} anni</td>
+            <td>Tab. 2.4.I</td>
+        </tr>
+        <tr>
+            <td>Classe d'uso</td>
+            <td class="center">{{ classe_uso }}</td>
+            <td>Tab. 2.4.II</td>
+        </tr>
+        <tr>
+            <td>Coefficiente d'uso C<sub>U</sub></td>
+            <td class="number">{{ CU }}</td>
+            <td>Tab. 2.4.II</td>
+        </tr>
+        <tr>
+            <td>Periodo di riferimento V<sub>R</sub></td>
+            <td class="number">{{ VR }} anni</td>
+            <td>V<sub>R</sub> = V<sub>N</sub> × C<sub>U</sub></td>
+        </tr>
+    </table>
+
+    <!-- CAPITOLO 3: NORMATIVE -->
+    <h1 id="cap3">3. Normative di Riferimento</h1>
+    <ul>
+        <li><strong>D.M. 17/01/2018</strong> - Aggiornamento delle "Norme Tecniche per le Costruzioni"</li>
+        <li><strong>Circolare 21/01/2019 n. 7</strong> - Istruzioni per l'applicazione delle NTC 2018</li>
+        <li><strong>Eurocodice 6</strong> - Progettazione delle strutture in muratura</li>
+        <li><strong>Eurocodice 8</strong> - Progettazione delle strutture per la resistenza sismica</li>
+        <li><strong>O.P.C.M. 3274/2003</strong> e s.m.i. - Norme tecniche per le costruzioni in zona sismica</li>
+    </ul>
+
+    <!-- CAPITOLO 4: MATERIALI -->
+    <h1 id="cap4">4. Caratteristiche dei Materiali</h1>
+
+    <h2>4.1 Muratura</h2>
+    <p>Le caratteristiche meccaniche della muratura sono state determinate secondo la Tabella C8.5.I della
+    Circolare n. 7/2019, con applicazione dei coefficienti correttivi previsti.</p>
+
+    <table>
+        <tr>
+            <th>Parametro</th>
+            <th>Simbolo</th>
+            <th>Valore</th>
+            <th>Unità</th>
+        </tr>
+        {{ materiali_tabella }}
+    </table>
+
+    <h2>4.2 Livello di Conoscenza</h2>
+    <div class="info-box">
+        <strong>Livello di conoscenza: {{ livello_conoscenza }}</strong><br>
+        Fattore di confidenza: FC = {{ FC }}
+    </div>
+
+    <!-- CAPITOLO 5: CARICHI -->
+    <h1 id="cap5">5. Analisi dei Carichi</h1>
+
+    <h2>5.1 Carichi Permanenti Strutturali (G1)</h2>
+    {{ carichi_g1 }}
+
+    <h2>5.2 Carichi Permanenti Non Strutturali (G2)</h2>
+    {{ carichi_g2 }}
+
+    <h2>5.3 Carichi Variabili (Q)</h2>
+    {{ carichi_q }}
+
+    <h2>5.4 Combinazioni di Carico</h2>
+    <p>Le combinazioni di carico sono state definite secondo il §2.5.3 delle NTC 2018.</p>
+
+    <!-- CAPITOLO 6: SISMICA -->
+    <h1 id="cap6">6. Azione Sismica</h1>
+
+    <h2>6.1 Parametri di Pericolosità</h2>
+    <table>
+        <tr>
+            <th>Stato Limite</th>
+            <th>T<sub>R</sub> [anni]</th>
+            <th>a<sub>g</sub> [g]</th>
+            <th>F<sub>0</sub></th>
+            <th>T<sub>C</sub>* [s]</th>
+        </tr>
+        {{ parametri_sismici }}
+    </table>
+
+    <h2>6.2 Categoria Sottosuolo e Topografica</h2>
+    <table>
+        <tr>
+            <th>Parametro</th>
+            <th>Categoria</th>
+            <th>Coefficiente</th>
+        </tr>
+        <tr>
+            <td>Sottosuolo</td>
+            <td class="center">{{ cat_sottosuolo }}</td>
+            <td class="number">S<sub>S</sub> = {{ SS }}</td>
+        </tr>
+        <tr>
+            <td>Topografia</td>
+            <td class="center">{{ cat_topografia }}</td>
+            <td class="number">S<sub>T</sub> = {{ ST }}</td>
+        </tr>
+        <tr>
+            <td>Amplificazione totale</td>
+            <td></td>
+            <td class="number"><strong>S = {{ S }}</strong></td>
+        </tr>
+    </table>
+
+    <h2>6.3 Spettro di Risposta Elastico</h2>
+    <div class="figure">
+        {{ spettro_immagine }}
+        <p class="figure-caption">Figura 6.1 - Spettro di risposta elastico SLV</p>
+    </div>
+
+    <h2>6.4 Fattore di Struttura</h2>
+    <div class="formula">
+        q = q<sub>0</sub> × K<sub>R</sub> = {{ q0 }} × {{ KR }} = <strong>{{ q }}</strong>
+        <span class="formula-label">(NTC §7.8.1.3)</span>
+    </div>
+
+    <!-- CAPITOLO 7: MODELLO -->
+    <h1 id="cap7">7. Modellazione Strutturale</h1>
+
+    <h2>7.1 Telaio Equivalente</h2>
+    <p>L'edificio è stato modellato mediante telaio equivalente secondo le indicazioni della Circolare §C8.7.1.
+    Il modello identifica automaticamente maschi murari (piers) e fasce di piano (spandrels).</p>
+
+    <table>
+        <tr>
+            <th>Elemento</th>
+            <th>Quantità</th>
+        </tr>
+        <tr>
+            <td>Maschi murari (piers)</td>
+            <td class="number">{{ n_maschi }}</td>
+        </tr>
+        <tr>
+            <td>Fasce di piano (spandrels)</td>
+            <td class="number">{{ n_fasce }}</td>
+        </tr>
+        <tr>
+            <td>Nodi rigidi</td>
+            <td class="number">{{ n_nodi }}</td>
+        </tr>
+    </table>
+
+    <h2>7.2 Rigidezza di Piano</h2>
+    {{ rigidezza_piano }}
+
+    <!-- CAPITOLO 8: ANALISI -->
+    <h1 id="cap8">8. Analisi Strutturale</h1>
+
+    <h2>8.1 Metodi di Analisi</h2>
+    <p>L'analisi strutturale è stata condotta con i seguenti metodi:</p>
+    {{ metodi_analisi }}
+
+    <h2>8.2 Analisi Modale</h2>
+    {{ analisi_modale }}
+
+    <h2>8.3 Analisi Pushover</h2>
+    {{ analisi_pushover }}
+
+    <!-- CAPITOLO 9: VERIFICHE -->
+    <h1 id="cap9">9. Verifiche di Sicurezza</h1>
+
+    <h2>9.1 Verifiche SLU - Maschi Murari</h2>
+    {{ verifiche_maschi }}
+
+    <h2>9.2 Verifiche SLU - Fasce</h2>
+    {{ verifiche_fasce }}
+
+    <h2>9.3 Verifiche SLD</h2>
+    {{ verifiche_sld }}
+
+    <h2>9.4 Indice di Rischio Sismico</h2>
+    <div class="info-box">
+        <strong>Indice di Rischio (IR):</strong> {{ IR }}<br>
+        <strong>Classe di Rischio Sismico:</strong> {{ classe_rischio }}
+    </div>
+
+    <!-- CAPITOLO 10: MECCANISMI LOCALI -->
+    <h1 id="cap10">10. Meccanismi Locali</h1>
+    {{ meccanismi_locali }}
+
+    <!-- CAPITOLO 11: RINFORZI -->
+    <h1 id="cap11">11. Interventi di Rinforzo</h1>
+    {{ interventi_rinforzo }}
+
+    <!-- CAPITOLO 12: CONCLUSIONI -->
+    <h1 id="cap12">12. Conclusioni</h1>
+    {{ conclusioni }}
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p>Relazione generata con <strong>MURATURA 3.0</strong> - Software per analisi strutturale edifici in muratura</p>
+        <p>Conforme a NTC 2018 (D.M. 17/01/2018) e Circolare n. 7/2019</p>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+% =============================================================================
+% RELAZIONE DI CALCOLO STRUTTURALE - MURATURA 3.0
+% Template LaTeX per edifici in muratura conforme NTC 2018
+% =============================================================================
+
+\documentclass[a4paper,11pt,twoside]{report}
+
+% -----------------------------------------------------------------------------
+% PACKAGES
+% -----------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pdfpages}
+\usepackage{lastpage}
+
+% -----------------------------------------------------------------------------
+% GEOMETRY
+% -----------------------------------------------------------------------------
+\geometry{
+    a4paper,
+    left=25mm,
+    right=20mm,
+    top=25mm,
+    bottom=25mm,
+    headheight=15pt
+}
+
+% -----------------------------------------------------------------------------
+% COLORS
+% -----------------------------------------------------------------------------
+\definecolor{primary}{RGB}{26,82,118}
+\definecolor{secondary}{RGB}{46,134,171}
+\definecolor{lightgray}{RGB}{248,249,250}
+\definecolor{darkgray}{RGB}{51,51,51}
+\definecolor{success}{RGB}{40,167,69}
+\definecolor{warning}{RGB}{255,193,7}
+\definecolor{danger}{RGB}{220,53,69}
+
+% -----------------------------------------------------------------------------
+% HEADER/FOOTER
+% -----------------------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[LO]{\nouppercase{\leftmark}}
+\fancyhead[RE]{<<project_name>>}
+\fancyfoot[C]{\footnotesize Relazione generata con MURATURA 3.0}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+% -----------------------------------------------------------------------------
+% TITLE FORMATTING
+% -----------------------------------------------------------------------------
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries\color{primary}}
+    {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}
+    {\normalfont\Large\bfseries\color{secondary}}
+    {\thesection}{1em}{}
+\titleformat{\subsection}
+    {\normalfont\large\bfseries\color{darkgray}}
+    {\thesubsection}{1em}{}
+
+% -----------------------------------------------------------------------------
+% TABLE SETTINGS
+% -----------------------------------------------------------------------------
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\newcommand{\tableheader}[1]{\cellcolor{primary}\textcolor{white}{\textbf{#1}}}
+
+% -----------------------------------------------------------------------------
+% CUSTOM COMMANDS
+% -----------------------------------------------------------------------------
+\newcommand{\dcrok}[1]{\textcolor{success}{\textbf{#1}}}
+\newcommand{\dcrwarn}[1]{\textcolor{warning}{\textbf{#1}}}
+\newcommand{\dcrfail}[1]{\textcolor{danger}{\textbf{#1}}}
+
+\newcommand{\formula}[2]{%
+    \begin{tcolorbox}[colback=lightgray,colframe=secondary,boxrule=0.5pt,arc=2pt,left=5pt,right=5pt,top=5pt,bottom=5pt]
+        #1 \hfill \textit{#2}
+    \end{tcolorbox}
+}
+
+% SI Units setup
+\sisetup{
+    output-decimal-marker = {,},
+    group-separator = {.},
+    per-mode = symbol
+}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    filecolor=primary,
+    urlcolor=secondary,
+    pdftitle={Relazione di Calcolo - <<project_name>>},
+    pdfauthor={MURATURA 3.0},
+    pdfsubject={Analisi strutturale edificio in muratura NTC 2018}
+}
+
+% =============================================================================
+% DOCUMENT
+% =============================================================================
+\begin{document}
+
+% -----------------------------------------------------------------------------
+% TITLE PAGE
+% -----------------------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\huge\bfseries\color{primary} RELAZIONE DI CALCOLO\\STRUTTURALE\par}
+    \vspace{1.5cm}
+
+    {\LARGE\color{secondary} <<project_name>>\par}
+    \vspace{0.5cm}
+
+    {\large Analisi strutturale edificio in muratura\\conforme NTC 2018\par}
+    \vspace{3cm}
+
+    \begin{tabular}{@{}ll@{}}
+        \textbf{Committente:} & <<committente>>\\[5pt]
+        \textbf{Progettista:} & <<progettista>>\\[5pt]
+        \textbf{Ubicazione:} & <<ubicazione>>\\[5pt]
+        \textbf{Data:} & <<data>>\\[5pt]
+        \textbf{Codice Progetto:} & <<codice_progetto>>\\
+    \end{tabular}
+
+    \vfill
+
+    {\footnotesize Relazione generata con MURATURA 3.0\\
+    Software per analisi strutturale edifici in muratura\\
+    Conforme a NTC 2018 e Circolare n. 7/2019\par}
+
+\end{titlepage}
+
+% -----------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% -----------------------------------------------------------------------------
+\tableofcontents
+\clearpage
+
+% =============================================================================
+% CHAPTER 1: PREMESSA
+% =============================================================================
+\chapter{Premessa}
+
+La presente relazione di calcolo strutturale è redatta ai sensi delle Norme Tecniche per le Costruzioni (NTC 2018 - D.M. 17 gennaio 2018) e della relativa Circolare esplicativa n. 7 del 21 gennaio 2019.
+
+Oggetto dell'analisi è l'edificio in muratura portante denominato \textbf{``<<project_name>>''}, ubicato in <<ubicazione>>.
+
+L'analisi strutturale è stata condotta utilizzando il software MURATURA 3.0, conforme alle prescrizioni normative vigenti per la verifica di edifici in muratura.
+
+% =============================================================================
+% CHAPTER 2: DESCRIZIONE OPERA
+% =============================================================================
+\chapter{Descrizione dell'Opera}
+
+\section{Generalità}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}ll@{}}
+        \toprule
+        \tableheader{Parametro} & \tableheader{Valore}\\
+        \midrule
+        Tipologia edificio & <<tipologia_edificio>>\\
+        Tipo costruzione & <<tipo_costruzione>>\\
+        Categoria intervento & <<categoria_intervento>>\\
+        Numero piani fuori terra & <<n_piani>>\\
+        Numero piani interrati & <<n_piani_interrati>>\\
+        Altezza massima & \SI{<<altezza_max>>}{\meter}\\
+        Superficie coperta & \SI{<<superficie_coperta>>}{\meter\squared}\\
+        \bottomrule
+    \end{tabular}
+    \caption{Caratteristiche generali dell'edificio}
+\end{table}
+
+\section{Vita Nominale e Classe d'Uso}
+
+Ai sensi del \S2.4 delle NTC 2018:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}llc@{}}
+        \toprule
+        \tableheader{Parametro} & \tableheader{Valore} & \tableheader{Riferimento}\\
+        \midrule
+        Vita nominale $V_N$ & \SI{<<VN>>}{anni} & Tab. 2.4.I\\
+        Classe d'uso & <<classe_uso>> & Tab. 2.4.II\\
+        Coefficiente d'uso $C_U$ & <<CU>> & Tab. 2.4.II\\
+        Periodo di riferimento $V_R$ & \SI{<<VR>>}{anni} & $V_R = V_N \times C_U$\\
+        \bottomrule
+    \end{tabular}
+    \caption{Parametri di vita nominale e classe d'uso}
+\end{table}
+
+% =============================================================================
+% CHAPTER 3: NORMATIVE
+% =============================================================================
+\chapter{Normative di Riferimento}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{D.M. 17/01/2018} - Aggiornamento delle ``Norme Tecniche per le Costruzioni''
+    \item \textbf{Circolare 21/01/2019 n. 7} - Istruzioni per l'applicazione delle NTC 2018
+    \item \textbf{Eurocodice 6} - Progettazione delle strutture in muratura
+    \item \textbf{Eurocodice 8} - Progettazione delle strutture per la resistenza sismica
+    \item \textbf{O.P.C.M. 3274/2003} e s.m.i. - Norme tecniche per le costruzioni in zona sismica
+\end{itemize}
+
+% =============================================================================
+% CHAPTER 4: MATERIALI
+% =============================================================================
+\chapter{Caratteristiche dei Materiali}
+
+\section{Muratura}
+
+Le caratteristiche meccaniche della muratura sono state determinate secondo la Tabella C8.5.I della Circolare n. 7/2019, con applicazione dei coefficienti correttivi previsti.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lccr@{}}
+        \toprule
+        \tableheader{Parametro} & \tableheader{Simbolo} & \tableheader{Valore} & \tableheader{Unità}\\
+        \midrule
+        <<materiali_tabella>>
+        \bottomrule
+    \end{tabular}
+    \caption{Proprietà meccaniche della muratura}
+\end{table}
+
+\section{Livello di Conoscenza}
+
+\begin{tcolorbox}[colback=blue!5,colframe=primary,title=Livello di Conoscenza]
+    \textbf{Livello:} <<livello_conoscenza>>\\
+    \textbf{Fattore di confidenza:} $FC = <<FC>>$
+\end{tcolorbox}
+
+% =============================================================================
+% CHAPTER 5: CARICHI
+% =============================================================================
+\chapter{Analisi dei Carichi}
+
+\section{Carichi Permanenti Strutturali (G1)}
+
+<<carichi_g1>>
+
+\section{Carichi Permanenti Non Strutturali (G2)}
+
+<<carichi_g2>>
+
+\section{Carichi Variabili (Q)}
+
+<<carichi_q>>
+
+\section{Combinazioni di Carico}
+
+Le combinazioni di carico sono state definite secondo il \S2.5.3 delle NTC 2018.
+
+% =============================================================================
+% CHAPTER 6: AZIONE SISMICA
+% =============================================================================
+\chapter{Azione Sismica}
+
+\section{Parametri di Pericolosità}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}ccccc@{}}
+        \toprule
+        \tableheader{Stato Limite} & \tableheader{$T_R$ [anni]} & \tableheader{$a_g$ [g]} & \tableheader{$F_0$} & \tableheader{$T_C^*$ [s]}\\
+        \midrule
+        <<parametri_sismici>>
+        \bottomrule
+    \end{tabular}
+    \caption{Parametri di pericolosità sismica}
+\end{table}
+
+\section{Categoria Sottosuolo e Topografica}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \tableheader{Parametro} & \tableheader{Categoria} & \tableheader{Coefficiente}\\
+        \midrule
+        Sottosuolo & <<cat_sottosuolo>> & $S_S = <<SS>>$\\
+        Topografia & <<cat_topografia>> & $S_T = <<ST>>$\\
+        Amplificazione totale & --- & $\mathbf{S = <<S>>}$\\
+        \bottomrule
+    \end{tabular}
+    \caption{Categorie di sottosuolo e topografia}
+\end{table}
+
+\section{Spettro di Risposta Elastico}
+
+\begin{figure}[H]
+    \centering
+    <<spettro_immagine>>
+    \caption{Spettro di risposta elastico SLV}
+\end{figure}
+
+\section{Fattore di Struttura}
+
+\begin{equation}
+    q = q_0 \times K_R = <<q0>> \times <<KR>> = \mathbf{<<q>>}
+\end{equation}
+
+secondo le indicazioni di NTC \S7.8.1.3.
+
+% =============================================================================
+% CHAPTER 7: MODELLO
+% =============================================================================
+\chapter{Modellazione Strutturale}
+
+\section{Telaio Equivalente}
+
+L'edificio è stato modellato mediante telaio equivalente secondo le indicazioni della Circolare \S C8.7.1. Il modello identifica automaticamente maschi murari (piers) e fasce di piano (spandrels).
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        \tableheader{Elemento} & \tableheader{Quantità}\\
+        \midrule
+        Maschi murari (piers) & <<n_maschi>>\\
+        Fasce di piano (spandrels) & <<n_fasce>>\\
+        Nodi rigidi & <<n_nodi>>\\
+        \bottomrule
+    \end{tabular}
+    \caption{Elementi del telaio equivalente}
+\end{table}
+
+\section{Rigidezza di Piano}
+
+<<rigidezza_piano>>
+
+% =============================================================================
+% CHAPTER 8: ANALISI
+% =============================================================================
+\chapter{Analisi Strutturale}
+
+\section{Metodi di Analisi}
+
+L'analisi strutturale è stata condotta con i seguenti metodi:
+
+<<metodi_analisi>>
+
+\section{Analisi Modale}
+
+<<analisi_modale>>
+
+\section{Analisi Pushover}
+
+<<analisi_pushover>>
+
+% =============================================================================
+% CHAPTER 9: VERIFICHE
+% =============================================================================
+\chapter{Verifiche di Sicurezza}
+
+\section{Verifiche SLU - Maschi Murari}
+
+<<verifiche_maschi>>
+
+\section{Verifiche SLU - Fasce}
+
+<<verifiche_fasce>>
+
+\section{Verifiche SLD}
+
+<<verifiche_sld>>
+
+\section{Indice di Rischio Sismico}
+
+\begin{tcolorbox}[colback=green!5,colframe=success]
+    \textbf{Indice di Rischio (IR):} <<IR>>\\
+    \textbf{Classe di Rischio Sismico:} <<classe_rischio>>
+\end{tcolorbox}
+
+% =============================================================================
+% CHAPTER 10: MECCANISMI LOCALI
+% =============================================================================
+\chapter{Meccanismi Locali}
+
+<<meccanismi_locali>>
+
+% =============================================================================
+% CHAPTER 11: RINFORZI
+% =============================================================================
+\chapter{Interventi di Rinforzo}
+
+<<interventi_rinforzo>>
+
+% =============================================================================
+% CHAPTER 12: CONCLUSIONI
+% =============================================================================
+\chapter{Conclusioni}
+
+<<conclusioni>>
+
+% =============================================================================
+% APPENDICES
+% =============================================================================
+\appendix
+
+\chapter{Allegati Grafici}
+
+% Qui si possono includere le tavole
+
+\chapter{Tabulati di Calcolo}
+
+% Qui si possono includere i tabulati dettagliati
+
+% =============================================================================
+\end{document}

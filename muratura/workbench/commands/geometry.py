@@ -1,10 +1,22 @@
 # -*- coding: utf-8 -*-
-"""Comandi geometria Muratura - Elementi BIM"""
+"""
+Comandi geometria Muratura - Elementi BIM con Arch
+
+Usa esclusivamente oggetti Arch per compatibilità IFC.
+"""
 
 import FreeCAD
 import FreeCADGui
-import Part
 import math
+
+# Import condizionale Arch
+try:
+    import Arch
+    import Draft
+    HAS_ARCH = True
+except ImportError:
+    HAS_ARCH = False
+    import Part
 
 
 def get_floor_height():
@@ -15,13 +27,29 @@ def get_floor_height():
     return 3000  # default 3m
 
 
+def add_ntc_properties(obj, element_type="Wall"):
+    """Aggiunge proprietà NTC 2018 a un oggetto."""
+    try:
+        from muratura.bim.properties import add_ntc_properties as add_props
+        add_props(obj, element_type)
+    except ImportError:
+        # Fallback: aggiungi proprietà base
+        props = [
+            ("App::PropertyInteger", "Floor", "Muratura", "Piano"),
+            ("App::PropertyString", "ElementType", "Muratura", "Tipo elemento"),
+        ]
+        for ptype, name, group, desc in props:
+            if not hasattr(obj, name):
+                obj.addProperty(ptype, name, group, desc)
+
+
 class CmdNewWall:
-    """Crea un nuovo muro."""
+    """Crea un nuovo muro usando Arch.makeWall."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuovo Muro",
-            "ToolTip": "Disegna un muro in muratura",
+            "ToolTip": "Disegna un muro in muratura (Arch.Wall)",
             "Pixmap": "Arch_Wall"
         }
 
@@ -35,32 +63,48 @@ class CmdNewWall:
         thickness = 300  # mm
         height = get_floor_height()
 
-        # Crea shape
-        shape = Part.makeBox(length, thickness, height)
+        if HAS_ARCH:
+            # Crea linea base
+            p1 = FreeCAD.Vector(0, 0, 0)
+            p2 = FreeCAD.Vector(length, 0, 0)
+            baseline = Draft.makeLine(p1, p2)
 
-        # Conta muri esistenti
-        count = len([o for o in doc.Objects if o.Name.startswith("Muro")])
+            # Crea muro Arch
+            wall = Arch.makeWall(baseline, width=thickness, height=height)
+            wall.Label = f"Muro{len([o for o in doc.Objects if 'Muro' in o.Label])+1:03d}"
 
-        # Crea oggetto
-        wall = doc.addObject("Part::Feature", f"Muro{count+1:03d}")
-        wall.Shape = shape
+            # Nascondi baseline
+            if baseline.ViewObject:
+                baseline.ViewObject.Visibility = False
 
-        # Proprietà
-        wall.addProperty("App::PropertyFloat", "Length", "Geometry", "Lunghezza (m)")
-        wall.addProperty("App::PropertyFloat", "Thickness", "Geometry", "Spessore (m)")
-        wall.addProperty("App::PropertyFloat", "Height", "Geometry", "Altezza (m)")
-        wall.addProperty("App::PropertyInteger", "Floor", "Geometry", "Piano")
-        wall.addProperty("App::PropertyString", "Material", "NTC2018", "Tipo muratura")
+            # Proprietà NTC
+            add_ntc_properties(wall, "Wall")
+            if hasattr(wall, 'Floor'):
+                wall.Floor = 0
 
-        wall.Length = length / 1000
-        wall.Thickness = thickness / 1000
-        wall.Height = height / 1000
-        wall.Floor = 0
-        wall.Material = "Muratura in mattoni pieni"
+            # Colore mattone
+            if wall.ViewObject:
+                wall.ViewObject.ShapeColor = (0.8, 0.4, 0.2)
 
-        # Colore mattone
-        if hasattr(wall, "ViewObject"):
-            wall.ViewObject.ShapeColor = (0.8, 0.4, 0.2)
+        else:
+            # Fallback Part
+            shape = Part.makeBox(length, thickness, height)
+            count = len([o for o in doc.Objects if o.Name.startswith("Muro")])
+            wall = doc.addObject("Part::Feature", f"Muro{count+1:03d}")
+            wall.Shape = shape
+
+            wall.addProperty("App::PropertyFloat", "Length", "Geometry", "Lunghezza (m)")
+            wall.addProperty("App::PropertyFloat", "Thickness", "Geometry", "Spessore (m)")
+            wall.addProperty("App::PropertyFloat", "Height", "Geometry", "Altezza (m)")
+            wall.addProperty("App::PropertyInteger", "Floor", "Geometry", "Piano")
+
+            wall.Length = length / 1000
+            wall.Thickness = thickness / 1000
+            wall.Height = height / 1000
+            wall.Floor = 0
+
+            if wall.ViewObject:
+                wall.ViewObject.ShapeColor = (0.8, 0.4, 0.2)
 
         doc.recompute()
         FreeCADGui.Selection.clearSelection()
@@ -71,55 +115,89 @@ class CmdNewWall:
 
 
 class CmdNewOpening:
-    """Crea un'apertura (finestra/porta) in un muro."""
+    """Crea un'apertura usando Arch.makeWindow."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuova Apertura",
-            "ToolTip": "Aggiungi finestra o porta a un muro",
+            "ToolTip": "Aggiungi finestra o porta (Arch.Window)",
             "Pixmap": "Arch_Window"
         }
 
     def Activated(self):
         sel = FreeCADGui.Selection.getSelection()
-        if not sel or not sel[0].Name.startswith("Muro"):
+        if not sel:
             FreeCAD.Console.PrintWarning("Seleziona un muro prima\n")
             return
 
         wall = sel[0]
         doc = FreeCAD.ActiveDocument
 
-        # Parametri apertura (finestra default)
+        # Parametri finestra default
         width = 1200  # mm
         height = 1400  # mm
-        sill = 900  # mm da terra
+        sill = 900  # mm
 
-        # Crea apertura come box
-        opening_shape = Part.makeBox(width, wall.Thickness * 1000 + 100, height)
+        if HAS_ARCH:
+            # Usa Arch.makeWindowPreset
+            try:
+                window = Arch.makeWindowPreset(
+                    "Simple door",
+                    width=width,
+                    height=height,
+                    h1=100, h2=100, h3=100,
+                    w1=100, w2=100,
+                    o1=0, o2=0
+                )
 
-        # Posiziona al centro del muro
-        wall_length = wall.Length * 1000
-        x_offset = (wall_length - width) / 2
-        opening_shape.translate(FreeCAD.Vector(x_offset, -50, sill))
+                # Posiziona nel muro
+                if hasattr(wall, 'Shape'):
+                    bb = wall.Shape.BoundBox
+                    x_pos = bb.XMin + (bb.XLength - width) / 2
+                    y_pos = bb.YMin + bb.YLength / 2
+                    z_pos = bb.ZMin + sill
 
-        # Boolean cut
+                    window.Placement.Base = FreeCAD.Vector(x_pos, y_pos, z_pos)
+
+                # Collega al muro
+                window.Hosts = [wall]
+
+                window.Label = f"Apertura{len([o for o in doc.Objects if 'Apertura' in o.Label])+1:03d}"
+
+            except Exception as e:
+                FreeCAD.Console.PrintError(f"Errore Arch.Window: {e}\n")
+                # Fallback: boolean cut
+                self._fallback_opening(wall, width, height, sill)
+        else:
+            self._fallback_opening(wall, width, height, sill)
+
+        doc.recompute()
+
+    def _fallback_opening(self, wall, width, height, sill):
+        """Crea apertura con boolean cut."""
+        doc = FreeCAD.ActiveDocument
+        bb = wall.Shape.BoundBox
+
+        opening_shape = Part.makeBox(width, bb.YLength + 100, height)
+        x_offset = (bb.XLength - width) / 2
+        opening_shape.translate(FreeCAD.Vector(bb.XMin + x_offset, bb.YMin - 50, bb.ZMin + sill))
+
         new_shape = wall.Shape.cut(opening_shape)
         wall.Shape = new_shape
 
-        doc.recompute()
-        FreeCAD.Console.PrintMessage(f"Apertura aggiunta a {wall.Name}\n")
+        FreeCAD.Console.PrintMessage(f"Apertura aggiunta a {wall.Label}\n")
 
     def IsActive(self):
         return FreeCAD.ActiveDocument is not None
 
 
 class CmdNewColumn:
-    """Crea un pilastro."""
+    """Crea un pilastro usando Arch.makeStructure."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuovo Pilastro",
-            "ToolTip": "Inserisci un pilastro",
+            "ToolTip": "Inserisci un pilastro (Arch.Structure)",
             "Pixmap": "Arch_Structure"
         }
 
@@ -128,29 +206,30 @@ class CmdNewColumn:
         if not doc:
             doc = FreeCAD.newDocument("Muratura")
 
-        # Parametri default
         width = 300  # mm
         depth = 300  # mm
         height = get_floor_height()
 
-        shape = Part.makeBox(width, depth, height)
+        if HAS_ARCH:
+            column = Arch.makeStructure(length=width, width=depth, height=height)
+            column.Label = f"Pilastro{len([o for o in doc.Objects if 'Pilastro' in o.Label])+1:03d}"
 
-        count = len([o for o in doc.Objects if o.Name.startswith("Pilastro")])
-        column = doc.addObject("Part::Feature", f"Pilastro{count+1:03d}")
-        column.Shape = shape
+            # Imposta come pilastro
+            if hasattr(column, 'Role'):
+                column.Role = "Column"
 
-        column.addProperty("App::PropertyFloat", "Width", "Geometry", "Larghezza (m)")
-        column.addProperty("App::PropertyFloat", "Depth", "Geometry", "Profondità (m)")
-        column.addProperty("App::PropertyFloat", "Height", "Geometry", "Altezza (m)")
-        column.addProperty("App::PropertyInteger", "Floor", "Geometry", "Piano")
+            add_ntc_properties(column, "Column")
 
-        column.Width = width / 1000
-        column.Depth = depth / 1000
-        column.Height = height / 1000
-        column.Floor = 0
+            if column.ViewObject:
+                column.ViewObject.ShapeColor = (0.6, 0.6, 0.6)
+        else:
+            shape = Part.makeBox(width, depth, height)
+            count = len([o for o in doc.Objects if o.Name.startswith("Pilastro")])
+            column = doc.addObject("Part::Feature", f"Pilastro{count+1:03d}")
+            column.Shape = shape
 
-        if hasattr(column, "ViewObject"):
-            column.ViewObject.ShapeColor = (0.6, 0.6, 0.6)
+            if column.ViewObject:
+                column.ViewObject.ShapeColor = (0.6, 0.6, 0.6)
 
         doc.recompute()
 
@@ -159,12 +238,12 @@ class CmdNewColumn:
 
 
 class CmdNewBeam:
-    """Crea una trave."""
+    """Crea una trave usando Arch.makeStructure."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuova Trave",
-            "ToolTip": "Inserisci una trave",
+            "ToolTip": "Inserisci una trave (Arch.Structure)",
             "Pixmap": "Arch_Structure"
         }
 
@@ -178,25 +257,36 @@ class CmdNewBeam:
         height = 500  # mm
         z_offset = get_floor_height() - height
 
-        shape = Part.makeBox(length, width, height)
-        shape.translate(FreeCAD.Vector(0, 0, z_offset))
+        if HAS_ARCH:
+            # Crea linea base per la trave
+            p1 = FreeCAD.Vector(0, 0, z_offset)
+            p2 = FreeCAD.Vector(length, 0, z_offset)
+            baseline = Draft.makeLine(p1, p2)
 
-        count = len([o for o in doc.Objects if o.Name.startswith("Trave")])
-        beam = doc.addObject("Part::Feature", f"Trave{count+1:03d}")
-        beam.Shape = shape
+            beam = Arch.makeStructure(baseline, width=width, height=height)
+            beam.Label = f"Trave{len([o for o in doc.Objects if 'Trave' in o.Label])+1:03d}"
 
-        beam.addProperty("App::PropertyFloat", "Length", "Geometry", "Lunghezza (m)")
-        beam.addProperty("App::PropertyFloat", "Width", "Geometry", "Larghezza (m)")
-        beam.addProperty("App::PropertyFloat", "Height", "Geometry", "Altezza (m)")
-        beam.addProperty("App::PropertyInteger", "Floor", "Geometry", "Piano")
+            if hasattr(beam, 'Role'):
+                beam.Role = "Beam"
 
-        beam.Length = length / 1000
-        beam.Width = width / 1000
-        beam.Height = height / 1000
-        beam.Floor = 0
+            # Nascondi baseline
+            if baseline.ViewObject:
+                baseline.ViewObject.Visibility = False
 
-        if hasattr(beam, "ViewObject"):
-            beam.ViewObject.ShapeColor = (0.5, 0.5, 0.5)
+            add_ntc_properties(beam, "Beam")
+
+            if beam.ViewObject:
+                beam.ViewObject.ShapeColor = (0.5, 0.5, 0.5)
+        else:
+            shape = Part.makeBox(length, width, height)
+            shape.translate(FreeCAD.Vector(0, 0, z_offset))
+
+            count = len([o for o in doc.Objects if o.Name.startswith("Trave")])
+            beam = doc.addObject("Part::Feature", f"Trave{count+1:03d}")
+            beam.Shape = shape
+
+            if beam.ViewObject:
+                beam.ViewObject.ShapeColor = (0.5, 0.5, 0.5)
 
         doc.recompute()
 
@@ -205,12 +295,12 @@ class CmdNewBeam:
 
 
 class CmdNewSlab:
-    """Crea un solaio."""
+    """Crea un solaio usando Arch.makeFloor/Structure."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuovo Solaio",
-            "ToolTip": "Inserisci un solaio",
+            "ToolTip": "Inserisci un solaio (Arch.Structure/Floor)",
             "Pixmap": "Arch_Floor"
         }
 
@@ -220,7 +310,7 @@ class CmdNewSlab:
             doc = FreeCAD.newDocument("Muratura")
 
         # Trova bounding box muri
-        walls = [o for o in doc.Objects if o.Name.startswith("Muro")]
+        walls = [o for o in doc.Objects if 'Muro' in o.Label or o.Name.startswith("Muro")]
 
         if walls:
             min_x = min_y = float('inf')
@@ -228,11 +318,12 @@ class CmdNewSlab:
             floor = 0
 
             for wall in walls:
-                bbox = wall.Shape.BoundBox
-                min_x = min(min_x, bbox.XMin)
-                min_y = min(min_y, bbox.YMin)
-                max_x = max(max_x, bbox.XMax)
-                max_y = max(max_y, bbox.YMax)
+                if hasattr(wall, 'Shape') and wall.Shape:
+                    bbox = wall.Shape.BoundBox
+                    min_x = min(min_x, bbox.XMin)
+                    min_y = min(min_y, bbox.YMin)
+                    max_x = max(max_x, bbox.XMax)
+                    max_y = max(max_y, bbox.YMax)
                 if hasattr(wall, 'Floor'):
                     floor = max(floor, wall.Floor)
 
@@ -248,24 +339,36 @@ class CmdNewSlab:
 
         thickness = 250  # mm
 
-        shape = Part.makeBox(width, depth, thickness)
-        shape.translate(FreeCAD.Vector(min_x, min_y, z_offset))
+        if HAS_ARCH:
+            # Crea rettangolo base
+            rect = Draft.makeRectangle(width, depth)
+            rect.Placement.Base = FreeCAD.Vector(min_x, min_y, z_offset)
 
-        count = len([o for o in doc.Objects if o.Name.startswith("Solaio")])
-        slab = doc.addObject("Part::Feature", f"Solaio{count+1:03d}")
-        slab.Shape = shape
+            slab = Arch.makeStructure(rect, height=thickness)
+            slab.Label = f"Solaio{floor+1:03d}"
 
-        slab.addProperty("App::PropertyFloat", "Area", "Geometry", "Area (m²)")
-        slab.addProperty("App::PropertyFloat", "Thickness", "Geometry", "Spessore (m)")
-        slab.addProperty("App::PropertyInteger", "Floor", "Geometry", "Piano")
+            if hasattr(slab, 'Role'):
+                slab.Role = "Slab"
 
-        slab.Area = (width * depth) / 1e6
-        slab.Thickness = thickness / 1000
-        slab.Floor = floor
+            # Nascondi rettangolo
+            if rect.ViewObject:
+                rect.ViewObject.Visibility = False
 
-        if hasattr(slab, "ViewObject"):
-            slab.ViewObject.ShapeColor = (0.9, 0.9, 0.8)
-            slab.ViewObject.Transparency = 50
+            add_ntc_properties(slab, "Slab")
+
+            if slab.ViewObject:
+                slab.ViewObject.ShapeColor = (0.9, 0.9, 0.8)
+                slab.ViewObject.Transparency = 50
+        else:
+            shape = Part.makeBox(width, depth, thickness)
+            shape.translate(FreeCAD.Vector(min_x, min_y, z_offset))
+
+            slab = doc.addObject("Part::Feature", f"Solaio{floor+1:03d}")
+            slab.Shape = shape
+
+            if slab.ViewObject:
+                slab.ViewObject.ShapeColor = (0.9, 0.9, 0.8)
+                slab.ViewObject.Transparency = 50
 
         doc.recompute()
 
@@ -274,12 +377,12 @@ class CmdNewSlab:
 
 
 class CmdNewStair:
-    """Crea una scala."""
+    """Crea una scala usando Arch.makeStairs."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuova Scala",
-            "ToolTip": "Inserisci una scala",
+            "ToolTip": "Inserisci una scala (Arch.Stairs)",
             "Pixmap": "Arch_Stairs"
         }
 
@@ -288,12 +391,33 @@ class CmdNewStair:
         if not doc:
             doc = FreeCAD.newDocument("Muratura")
 
-        # Scala a rampa singola
         width = 1200  # mm
         height = get_floor_height()
-        num_steps = int(height / 170)  # alzata ~17cm
+        num_steps = int(height / 170)
+
+        if HAS_ARCH:
+            try:
+                stair = Arch.makeStairs(
+                    width=width,
+                    height=height,
+                    steps=num_steps
+                )
+                stair.Label = f"Scala{len([o for o in doc.Objects if 'Scala' in o.Label])+1:03d}"
+
+                if stair.ViewObject:
+                    stair.ViewObject.ShapeColor = (0.7, 0.7, 0.7)
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"Arch.Stairs non disponibile: {e}\n")
+                self._fallback_stair(doc, width, height, num_steps)
+        else:
+            self._fallback_stair(doc, width, height, num_steps)
+
+        doc.recompute()
+
+    def _fallback_stair(self, doc, width, height, num_steps):
+        """Crea scala con Part."""
         step_height = height / num_steps
-        step_depth = 280  # pedata
+        step_depth = 280
 
         shapes = []
         for i in range(num_steps):
@@ -302,35 +426,24 @@ class CmdNewStair:
             shapes.append(step)
 
         compound = Part.makeCompound(shapes)
-
         count = len([o for o in doc.Objects if o.Name.startswith("Scala")])
         stair = doc.addObject("Part::Feature", f"Scala{count+1:03d}")
         stair.Shape = compound
 
-        stair.addProperty("App::PropertyInteger", "NumSteps", "Geometry", "Numero gradini")
-        stair.addProperty("App::PropertyFloat", "Width", "Geometry", "Larghezza (m)")
-        stair.addProperty("App::PropertyInteger", "Floor", "Geometry", "Piano")
-
-        stair.NumSteps = num_steps
-        stair.Width = width / 1000
-        stair.Floor = 0
-
-        if hasattr(stair, "ViewObject"):
+        if stair.ViewObject:
             stair.ViewObject.ShapeColor = (0.7, 0.7, 0.7)
-
-        doc.recompute()
 
     def IsActive(self):
         return True
 
 
 class CmdNewRoof:
-    """Crea una copertura."""
+    """Crea una copertura usando Arch.makeRoof."""
 
     def GetResources(self):
         return {
             "MenuText": "Nuova Copertura",
-            "ToolTip": "Inserisci una copertura a falde",
+            "ToolTip": "Inserisci una copertura a falde (Arch.Roof)",
             "Pixmap": "Arch_Roof"
         }
 
@@ -340,7 +453,7 @@ class CmdNewRoof:
             doc = FreeCAD.newDocument("Muratura")
 
         # Trova bbox edificio
-        walls = [o for o in doc.Objects if o.Name.startswith("Muro")]
+        walls = [o for o in doc.Objects if 'Muro' in o.Label or o.Name.startswith("Muro")]
 
         if walls:
             min_x = min_y = float('inf')
@@ -348,56 +461,75 @@ class CmdNewRoof:
             max_z = 0
 
             for wall in walls:
-                bbox = wall.Shape.BoundBox
-                min_x = min(min_x, bbox.XMin)
-                min_y = min(min_y, bbox.YMin)
-                max_x = max(max_x, bbox.XMax)
-                max_y = max(max_y, bbox.YMax)
-                max_z = max(max_z, bbox.ZMax)
+                if hasattr(wall, 'Shape') and wall.Shape:
+                    bbox = wall.Shape.BoundBox
+                    min_x = min(min_x, bbox.XMin)
+                    min_y = min(min_y, bbox.YMin)
+                    max_x = max(max_x, bbox.XMax)
+                    max_y = max(max_y, bbox.YMax)
+                    max_z = max(max_z, bbox.ZMax)
         else:
             min_x = min_y = 0
             max_x = 10000
             max_y = 8000
             max_z = 3000
 
-        width = max_x - min_x
-        depth = max_y - min_y
-        overhang = 500  # sporto
-        ridge_height = 2000  # altezza colmo
+        overhang = 500
+        ridge_height = 2000
 
-        # Copertura a due falde
+        if HAS_ARCH:
+            try:
+                # Crea wire perimetrale
+                points = [
+                    FreeCAD.Vector(min_x - overhang, min_y - overhang, max_z),
+                    FreeCAD.Vector(max_x + overhang, min_y - overhang, max_z),
+                    FreeCAD.Vector(max_x + overhang, max_y + overhang, max_z),
+                    FreeCAD.Vector(min_x - overhang, max_y + overhang, max_z),
+                    FreeCAD.Vector(min_x - overhang, min_y - overhang, max_z),
+                ]
+                wire = Draft.makeWire(points, closed=True)
+
+                roof = Arch.makeRoof(wire, angles=[25, 25, 25, 25])
+                roof.Label = "Copertura001"
+
+                if wire.ViewObject:
+                    wire.ViewObject.Visibility = False
+
+                if roof.ViewObject:
+                    roof.ViewObject.ShapeColor = (0.6, 0.3, 0.2)
+
+            except Exception as e:
+                FreeCAD.Console.PrintWarning(f"Arch.Roof non disponibile: {e}\n")
+                self._fallback_roof(doc, min_x, min_y, max_x, max_y, max_z, overhang, ridge_height)
+        else:
+            self._fallback_roof(doc, min_x, min_y, max_x, max_y, max_z, overhang, ridge_height)
+
+        doc.recompute()
+
+    def _fallback_roof(self, doc, min_x, min_y, max_x, max_y, max_z, overhang, ridge_height):
+        """Crea copertura con Part."""
+        mid_y = (min_y + max_y) / 2
+
         p1 = FreeCAD.Vector(min_x - overhang, min_y - overhang, max_z)
         p2 = FreeCAD.Vector(max_x + overhang, min_y - overhang, max_z)
-        p3 = FreeCAD.Vector(max_x + overhang, (min_y + max_y) / 2, max_z + ridge_height)
-        p4 = FreeCAD.Vector(min_x - overhang, (min_y + max_y) / 2, max_z + ridge_height)
+        p3 = FreeCAD.Vector(max_x + overhang, mid_y, max_z + ridge_height)
+        p4 = FreeCAD.Vector(min_x - overhang, mid_y, max_z + ridge_height)
         p5 = FreeCAD.Vector(min_x - overhang, max_y + overhang, max_z)
         p6 = FreeCAD.Vector(max_x + overhang, max_y + overhang, max_z)
 
-        # Crea due falde
         face1 = Part.Face(Part.makePolygon([p1, p2, p3, p4, p1]))
         face2 = Part.Face(Part.makePolygon([p4, p3, p6, p5, p4]))
 
-        # Estrudi per spessore
         thickness = 200
         solid1 = face1.extrude(FreeCAD.Vector(0, 0, thickness))
         solid2 = face2.extrude(FreeCAD.Vector(0, 0, thickness))
 
         compound = Part.makeCompound([solid1, solid2])
-
-        count = len([o for o in doc.Objects if o.Name.startswith("Copertura")])
-        roof = doc.addObject("Part::Feature", f"Copertura{count+1:03d}")
+        roof = doc.addObject("Part::Feature", "Copertura001")
         roof.Shape = compound
 
-        roof.addProperty("App::PropertyFloat", "RidgeHeight", "Geometry", "Altezza colmo (m)")
-        roof.addProperty("App::PropertyFloat", "Overhang", "Geometry", "Sporto (m)")
-
-        roof.RidgeHeight = ridge_height / 1000
-        roof.Overhang = overhang / 1000
-
-        if hasattr(roof, "ViewObject"):
+        if roof.ViewObject:
             roof.ViewObject.ShapeColor = (0.6, 0.3, 0.2)
-
-        doc.recompute()
 
     def IsActive(self):
         return True
